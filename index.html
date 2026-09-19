@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Музыкальный Петербург: Квартиры и адреса</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; background: #e5e5e5; }
+        #map { height: 100vh; width: 100vw; }
+        
+        #slide-panel {
+            position: fixed; top: 0; right: -500px; width: 450px; height: 100vh;
+            background: #ffffff; box-shadow: -4px 0 25px rgba(0,0,0,0.15);
+            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 1000; overflow-y: auto; padding: 30px 25px; box-sizing: border-box;
+        }
+        #slide-panel.active { right: 0; }
+        
+        .close-btn {
+            position: absolute; top: 15px; right: 20px; font-size: 32px;
+            cursor: pointer; color: #999; line-height: 1; transition: color 0.2s;
+        }
+        .close-btn:hover { color: #e74c3c; }
+        
+        #place-title { font-size: 24px; margin: 0 0 8px; color: #2c3e50; padding-right: 25px; line-height: 1.2; }
+        #place-address { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; font-weight: 500; }
+        
+        /* ИСПРАВЛЕННЫЙ БЛОК: Задаем жесткую высоту 300px, чтобы браузер не схлопывал картинки */
+        #image-gallery img {
+            width: 100%; 
+            height: 300px; 
+            object-fit: contain; 
+            border-radius: 10px; 
+            margin-bottom: 10px; 
+            background: transparent; 
+        }
+        
+        #image-gallery figure { margin: 0 0 20px 0; padding: 0; }
+        #image-gallery figcaption { 
+            font-size: 14px; color: #555; text-align: center; 
+            margin-top: -5px; font-weight: bold; font-style: italic; 
+        }
+        
+        #place-description { font-size: 15px; line-height: 1.6; color: #444; text-align: justify; margin-bottom: 25px; }
+        
+        .museum-link {
+            display: inline-block; padding: 12px 20px; background: #2980b9;
+            color: white; text-decoration: none; border-radius: 6px; font-size: 15px; 
+            font-weight: bold; transition: background 0.3s; text-align: center; width: calc(100% - 40px); box-sizing: border-box;
+        }
+        .museum-link:hover { background: #1c5982; }
+
+        .year-tooltip {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid #c0392b;
+            border-radius: 4px;
+            color: #c0392b;
+            font-weight: bold;
+            font-size: 13px;
+            padding: 3px 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .leaflet-tooltip-bottom.year-tooltip::before {
+            border-bottom-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div id="slide-panel">
+        <div class="close-btn" onclick="closePanel()">×</div>
+        <h2 id="place-title">Название</h2>
+        <div id="place-address">Адрес</div>
+        <div id="image-gallery"></div>
+        <div id="place-description">Описание...</div>
+        <a href="#" id="place-url" class="museum-link" target="_blank">Подробнее</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([59.928, 30.315], 14);
+
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(map);
+
+        const defaultIcon = new L.Icon.Default();
+        const redIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+
+        const locations = [
+            {
+                name: "Музей-квартира Н. А. Римского-Корсакова", address: "Загородный пр., 28", coords: [59.923837, 30.334199], icon: defaultIcon,
+                images: ["rimsky.jpg"], 
+                description: "Единственный музей композитора в Петербурге. Здесь Римский-Корсаков провёл последние 15 лет жизни.", url: "https://theatremuseum.ru/branch/rimkor"
+            },
+            {
+                name: "Шереметевский дворец — Музей музыки", address: "наб. реки Фонтанки, 34", coords: [59.936081, 30.345831], icon: defaultIcon,
+                images: ["sheremetev.jpg"], 
+                description: "Коллекция исторических музыкальных инструментов. Идеальное место для изучения устройства струнного квартета.", url: "https://theatremuseum.ru/filial/sheremetevskiy_dvorec_muzey_muzyki"
+            },
+            {
+                name: "Музей театрального и музыкального искусства", address: "пл. Островского, 6", coords: [59.931535, 30.336202], icon: defaultIcon,
+                images: [], 
+                description: "Материалы по истории русского театра, личные вещи композиторов и старинные инструменты.", url: "https://theatremuseum.ru/branch/glavnoe_zdanie"
+            },
+            {
+                name: "Музей звука", address: "Лиговский пр., 53", coords: [59.929215, 30.358237], icon: defaultIcon,
+                images: ["sound.jpg"], 
+                description: "Пространство, посвященное саунд-арту и авторским инструментам. Наглядная демонстрация регистров звука.", url: "https://soundmuseumspb.ru/"
+            },
+
+            {
+                name: "Дом, где жил Глинка", address: "пер. Пирогова, 8 (бывш. Глухой пер.)", coords: [59.927515, 30.309485], icon: redIcon,
+                yearLabel: "1836–1837",
+                images: [
+                    { src: "glinka_home_old.jpg", caption: "Исторический вид дома (Тогда)" },
+                    { src: "glinka_home_now.jpg", caption: "Современный вид дома (Сейчас)" },
+                    { src: "glinka_old.jpg", caption: "М. И. Глинка" }
+                ],
+                description: "В этом доме великий композитор жил в 1836–1837 годах. Именно здесь он заканчивал работу над своей гениальной оперой «Жизнь за царя».", url: ""
+            },
+            {
+                name: "Фонарный переулок", address: "Фонарный пер.", coords: [59.928811, 30.305001], icon: redIcon,
+                yearLabel: "1830-е",
+                images: [
+                    { src: "fonarny_old.jpg", caption: "Фонарный мост и переулок" },
+                    { src: "glinka_young.jpg", caption: "Молодой Глинка" }
+                ],
+                description: "На пересечении с Фонарным переулком располагались дома, в которых композитор часто бывал. Эти места пропитаны духом старого Петербурга.", url: ""
+            },
+            {
+                name: "Благородный пансион", address: "наб. реки Фонтанки, 164", coords: [59.914285, 30.279860], icon: redIcon,
+                yearLabel: "1818–1822",
+                images: [
+                    { src: "pansion_old.jpg", caption: "Набережная Фонтанки (Тогда)" },
+                    { src: "pansion_now.jpg", caption: "Здание пансиона (Сейчас)" },
+                    { src: "glinka_young.jpg", caption: "Юный М. И. Глинка" }
+                ],
+                description: "В Благородном пансионе при Главном педагогическом институте Михаил Глинка учился с 1818 по 1822 год.", url: ""
+            },
+            {
+                name: "Большой (Каменный) театр", address: "Театральная пл., 3", coords: [59.925700, 30.298200], icon: redIcon,
+                yearLabel: "1836, 1842",
+                images: [
+                    { src: "teatr_old.jpg", caption: "Большой Каменный театр (Тогда)" },
+                    { src: "Bolshoi_Peterburg_Mayr.jpg", caption: "Исторический вид площади" },
+                    { src: "conservatory_new.jpg", caption: "Здание Консерватории на этом месте (Сейчас)" }
+                ],
+                description: "Здесь находился Императорский Большой театр, на сцене которого с триумфом прошла премьера опер Глинки «Жизнь за царя» (1836) и «Руслан и Людмила» (1842). Сейчас на этом месте — Консерватория.", url: ""
+            }
+        ];
+
+        function openPanel(data) {
+            document.getElementById('place-title').innerText = data.name;
+            document.getElementById('place-address').innerText = data.address;
+            document.getElementById('place-description').innerText = data.description;
+            
+            const btn = document.getElementById('place-url');
+            if (data.url) { btn.href = data.url; btn.style.display = 'inline-block'; } 
+            else { btn.style.display = 'none'; }
+            
+            const gallery = document.getElementById('image-gallery');
+            gallery.innerHTML = ''; 
+            
+            data.images.forEach(imgData => {
+                if (typeof imgData === 'string') {
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    gallery.appendChild(img);
+                } else {
+                    const figure = document.createElement('figure');
+                    const img = document.createElement('img');
+                    img.src = imgData.src;
+                    
+                    const caption = document.createElement('figcaption');
+                    caption.innerText = imgData.caption;
+                    
+                    figure.appendChild(img);
+                    figure.appendChild(caption);
+                    gallery.appendChild(figure);
+                }
+            });
+            document.getElementById('slide-panel').classList.add('active');
+        }
+
+        function closePanel() { document.getElementById('slide-panel').classList.remove('active'); }
+
+        locations.forEach(loc => {
+            const marker = L.marker(loc.coords, { icon: loc.icon }).addTo(map);
+            
+            if (loc.yearLabel) {
+                marker.bindTooltip(loc.yearLabel, {
+                    permanent: true,       
+                    direction: 'bottom',   
+                    className: 'year-tooltip', 
+                    offset: [0, 5]         
+                });
+            }
+
+            marker.on('click', () => {
+                openPanel(loc);
+                map.setView([loc.coords[0], loc.coords[1] - 0.015], 14, { animate: true });
+            });
+        });
+    </script>
+</body>
+</html>
