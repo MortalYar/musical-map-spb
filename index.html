@@ -4,12 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Музыкальный Петербург: Квартиры и адреса</title>
+    
+    <!-- Базовые стили карты -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    
+    <!-- Стили для модуля построения маршрутов -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    
     <style>
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; background: #e5e5e5; }
         #map { height: 100vh; width: 100vw; }
         
         .leaflet-control-attribution { display: none !important; }
+
+        /* Скрываем громоздкую панель с текстовыми шагами маршрута */
+        .leaflet-routing-container { display: none !important; }
 
         #slide-panel {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -102,12 +111,21 @@
         </div>
     </div>
 
+    <!-- Базовые скрипты -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <!-- Скрипт модуля прокладки маршрутов -->
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
     <script>
         const map = L.map('map', { attributionControl: false }).setView([59.928, 30.315], 14);
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
+        // Координаты школы, от которой строим маршруты
+        const portnovCoords = [59.9108, 30.3225];
+
+        // Иконки для карты
         const defaultIcon = new L.Icon.Default();
         
         const redIcon = new L.Icon({
@@ -122,7 +140,21 @@
             iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
         });
 
+        const orangeIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+
         const locations = [
+            // === Стартовая точка (Школа) ===
+            {
+                name: "ДМШ имени Г. А. Портнова", address: "наб. Обводного канала, 123Б", coords: portnovCoords, icon: orangeIcon,
+                mapLabel: "ДМШ им. Г. А. Портнова",
+                images: [], 
+                description: "Санкт-Петербургская детская музыкальная школа имени Г. А. Портнова. Именно отсюда мы начинаем нашу музыкальную прогулку к местам великих композиторов.", url: "https://dmsh31.spb.ru/"
+            },
+
             // === Н. А. Римский-Корсаков (Зеленые маркеры) ===
             {
                 name: "Консерватория и Памятник Н. А. Римскому-Корсакову", address: "Театральная пл., 3", coords: [59.9255, 30.2985], icon: greenIcon,
@@ -208,6 +240,31 @@
 
         let currentLocData = null;
         let currentImgIndex = 0;
+        let routingControl = null;
+
+        // Функция построения пешеходного маршрута
+        function buildRoute(targetCoords) {
+            // Удаляем старый маршрут, если он есть
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+            
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(portnovCoords[0], portnovCoords[1]),
+                    L.latLng(targetCoords[0], targetCoords[1])
+                ],
+                routeWhileDragging: false,
+                addWaypoints: false, // Отключаем возможность менять маршрут мышкой
+                showAlternatives: false,
+                fitSelectedRoutes: true, // Автоматически масштабировать карту, чтобы охватить весь путь
+                lineOptions: {
+                    styles: [{color: '#e67e22', opacity: 0.9, weight: 6, dashArray: '10, 12'}] // Оранжевый пунктир (эффект шагов)
+                },
+                createMarker: function() { return null; }, // Отключаем технические зеленые маркеры старта/финиша
+                show: false
+            }).addTo(map);
+        }
 
         function openPanel(data) {
             currentLocData = data;
@@ -298,7 +355,15 @@
 
             marker.on('click', () => {
                 openPanel(loc);
-                map.setView([loc.coords[0], loc.coords[1]], 14, { animate: true });
+                
+                // Если кликнули на саму Школу - просто приближаем. 
+                // Если на другие точки - прокладываем маршрут.
+                if (loc.name === "ДМШ имени Г. А. Портнова") {
+                    map.setView(loc.coords, 14, { animate: true });
+                    if (routingControl) map.removeControl(routingControl);
+                } else {
+                    buildRoute(loc.coords);
+                }
             });
         });
     </script>
