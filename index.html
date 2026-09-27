@@ -9,61 +9,73 @@
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; background: #e5e5e5; }
         #map { height: 100vh; width: 100vw; }
         
+        .leaflet-control-attribution { display: none !important; }
+
         #slide-panel {
-            position: fixed; top: 0; right: -500px; width: 450px; height: 100vh;
-            background: #ffffff; box-shadow: -4px 0 25px rgba(0,0,0,0.15);
-            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            z-index: 1000; overflow-y: auto; padding: 30px 25px; box-sizing: border-box;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(25, 25, 25, 0.96); 
+            z-index: 2000;
+            display: flex; flex-direction: column;
+            color: white;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+            box-sizing: border-box;
         }
-        #slide-panel.active { right: 0; }
+        #slide-panel.active { opacity: 1; pointer-events: auto; }
         
         .close-btn {
-            position: absolute; top: 15px; right: 20px; font-size: 32px;
-            cursor: pointer; color: #999; line-height: 1; transition: color 0.2s;
+            position: absolute; top: 25px; right: 35px; font-size: 50px;
+            cursor: pointer; color: #aaa; line-height: 1; transition: color 0.2s;
+            z-index: 2010;
         }
         .close-btn:hover { color: #e74c3c; }
         
-        #place-title { font-size: 24px; margin: 0 0 8px; color: #2c3e50; padding-right: 25px; line-height: 1.2; }
-        #place-address { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; font-weight: 500; }
+        .presentation-header { text-align: center; padding: 30px 20px 10px; }
+        #place-title { font-size: 32px; margin: 0 0 10px; color: #fff; letter-spacing: 1px; }
+        #place-address { font-size: 16px; color: #bdc3c7; font-weight: 500; }
         
-        /* ИСПРАВЛЕННЫЙ БЛОК: Задаем жесткую высоту 300px, чтобы браузер не схлопывал картинки */
-        #image-gallery img {
-            width: 100%; 
-            height: 300px; 
-            object-fit: contain; 
-            border-radius: 10px; 
-            margin-bottom: 10px; 
-            background: transparent; 
+        .presentation-content { 
+            flex: 1; display: flex; align-items: center; justify-content: center; 
+            position: relative; width: 100%; max-width: 1200px; margin: 0 auto;
         }
         
-        #image-gallery figure { margin: 0 0 20px 0; padding: 0; }
-        #image-gallery figcaption { 
-            font-size: 14px; color: #555; text-align: center; 
-            margin-top: -5px; font-weight: bold; font-style: italic; 
-        }
+        .slide-container { text-align: center; width: 100%; padding: 0 80px; box-sizing: border-box; }
         
-        #place-description { font-size: 15px; line-height: 1.6; color: #444; text-align: justify; margin-bottom: 25px; }
+        .slider-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); 
+            color: white; font-size: 35px; cursor: pointer; 
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+            z-index: 2020;
+        }
+        .slider-btn:hover { background: rgba(255,255,255,0.3); border-color: white; }
+        #prev-btn { left: 20px; }
+        #next-btn { right: 20px; }
+        
+        .presentation-footer { 
+            padding: 20px; max-width: 900px; margin: 0 auto 30px; text-align: center; 
+        }
+        #place-description { 
+            font-size: 18px; line-height: 1.6; color: #ddd; margin-bottom: 25px; 
+        }
         
         .museum-link {
-            display: inline-block; padding: 12px 20px; background: #2980b9;
-            color: white; text-decoration: none; border-radius: 6px; font-size: 15px; 
-            font-weight: bold; transition: background 0.3s; text-align: center; width: calc(100% - 40px); box-sizing: border-box;
+            display: inline-block; padding: 12px 30px; background: #c0392b;
+            color: white; text-decoration: none; border-radius: 6px; font-size: 16px; 
+            font-weight: bold; transition: background 0.3s;
         }
-        .museum-link:hover { background: #1c5982; }
+        .museum-link:hover { background: #e74c3c; }
 
-        .year-tooltip {
-            background-color: rgba(255, 255, 255, 0.95);
-            border: 1px solid #c0392b;
-            border-radius: 4px;
-            color: #c0392b;
-            font-weight: bold;
-            font-size: 13px;
-            padding: 3px 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .custom-tooltip {
+            background-color: rgba(25, 30, 36, 0.95);
+            border: 1px solid #7f8c8d;
+            border-radius: 6px; color: #ecf0f1;
+            font-weight: bold; font-size: 13px;
+            padding: 5px 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
-        .leaflet-tooltip-bottom.year-tooltip::before {
-            border-bottom-color: #c0392b;
-        }
+        .leaflet-tooltip-bottom.custom-tooltip::before { border-bottom-color: rgba(25, 30, 36, 0.95); }
     </style>
 </head>
 <body>
@@ -72,34 +84,70 @@
 
     <div id="slide-panel">
         <div class="close-btn" onclick="closePanel()">×</div>
-        <h2 id="place-title">Название</h2>
-        <div id="place-address">Адрес</div>
-        <div id="image-gallery"></div>
-        <div id="place-description">Описание...</div>
-        <a href="#" id="place-url" class="museum-link" target="_blank">Подробнее</a>
+        
+        <div class="presentation-header">
+            <h2 id="place-title">Название</h2>
+            <div id="place-address">Адрес</div>
+        </div>
+
+        <div class="presentation-content">
+            <button id="prev-btn" class="slider-btn" onclick="prevImg()">&#10094;</button>
+            <div class="slide-container" id="slide-media-container"></div>
+            <button id="next-btn" class="slider-btn" onclick="nextImg()">&#10095;</button>
+        </div>
+
+        <div class="presentation-footer">
+            <div id="place-description">Описание...</div>
+            <a href="#" id="place-url" class="museum-link" target="_blank">Подробнее</a>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script>
-        const map = L.map('map').setView([59.928, 30.315], 14);
+        const map = L.map('map', { attributionControl: false }).setView([59.928, 30.315], 14);
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(map);
 
         const defaultIcon = new L.Icon.Default();
+        
         const redIcon = new L.Icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
             iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
         });
 
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+        });
+
         const locations = [
+            // === Н. А. Римский-Корсаков (Зеленые маркеры) ===
             {
-                name: "Музей-квартира Н. А. Римского-Корсакова", address: "Загородный пр., 28", coords: [59.923837, 30.334199], icon: defaultIcon,
-                images: ["rimsky.jpg"], 
-                description: "Единственный музей композитора в Петербурге. Здесь Римский-Корсаков провёл последние 15 лет жизни.", url: "https://theatremuseum.ru/branch/rimkor"
+                name: "Консерватория и Памятник Н. А. Римскому-Корсакову", address: "Театральная пл., 3", coords: [59.9255, 30.2985], icon: greenIcon,
+                mapLabel: "Н. А. Римский-Корсаков",
+                images: [
+                    { src: "monument_rk.jpg", caption: "Памятник Н. А. Римскому-Корсакову на Театральной площади" },
+                    { src: "conservatory_hall.jpg", caption: "Малый зал Петербургской консерватории" },
+                    { src: "conservatory_corridor.jpg", caption: "Прогулка по историческим коридорам консерватории" },
+                    { src: "conservatory_cabinet.jpg", caption: "Н. А. Римский-Корсаков в своем классе (кабинете) с учениками" }
+                ],
+                description: "Н. А. Римский-Корсаков был профессором Петербургской консерватории почти 40 лет. Отсюда, после лекций и репетиций, начинался его ежедневный пеший путь домой.", url: ""
             },
+            {
+                name: "Музей-квартира Н. А. Римского-Корсакова", address: "Загородный пр., 28", coords: [59.923837, 30.334199], icon: greenIcon,
+                mapLabel: "Н. А. Римский-Корсаков",
+                images: [
+                    { src: "rimsky.jpg", caption: "Гостиная в музее-квартире" },
+                    { src: "rimsky_museum_1.jpg", caption: "Столовая композитора" },
+                    { src: "rimsky_museum_cabinet.jpg", caption: "Рабочий кабинет Н. А. Римского-Корсакова" },
+                    { src: "rimsky_walk.mp4", caption: "Путь Н. А. Римского-Корсакова от Консерватории домой" }
+                ], 
+                description: "Единственный музей композитора в Петербурге. Здесь Н. А. Римский-Корсаков провёл последние 15 лет жизни. В своем кабинете за высоким столом-конторкой он написал множество выдающихся произведений.", url: "https://theatremuseum.ru/branch/rimkor"
+            },
+
+            // === Общие Музеи (Стандартные синие маркеры) ===
             {
                 name: "Шереметевский дворец — Музей музыки", address: "наб. реки Фонтанки, 34", coords: [59.936081, 30.345831], icon: defaultIcon,
                 images: ["sheremetev.jpg"], 
@@ -116,48 +164,55 @@
                 description: "Пространство, посвященное саунд-арту и авторским инструментам. Наглядная демонстрация регистров звука.", url: "https://soundmuseumspb.ru/"
             },
 
+            // === М. И. Глинка (Красные маркеры) ===
             {
-                name: "Дом, где жил Глинка", address: "пер. Пирогова, 8 (бывш. Глухой пер.)", coords: [59.927515, 30.309485], icon: redIcon,
-                yearLabel: "1836–1837",
+                name: "Дом, где жил М. И. Глинка", address: "пер. Пирогова, 8 (бывш. Глухой пер.)", coords: [59.927515, 30.309485], icon: redIcon,
+                mapLabel: "М. И. Глинка (1836–1837)",
                 images: [
                     { src: "glinka_home_old.jpg", caption: "Исторический вид дома (Тогда)" },
                     { src: "glinka_home_now.jpg", caption: "Современный вид дома (Сейчас)" },
                     { src: "glinka_old.jpg", caption: "М. И. Глинка" }
                 ],
-                description: "В этом доме великий композитор жил в 1836–1837 годах. Именно здесь он заканчивал работу над своей гениальной оперой «Жизнь за царя».", url: ""
+                description: "В этом доме великий композитор М. И. Глинка жил в 1836–1837 годах. Именно здесь он заканчивал работу над своей гениальной оперой «Жизнь за царя».", url: ""
             },
             {
                 name: "Фонарный переулок", address: "Фонарный пер.", coords: [59.928811, 30.305001], icon: redIcon,
-                yearLabel: "1830-е",
+                mapLabel: "М. И. Глинка",
                 images: [
                     { src: "fonarny_old.jpg", caption: "Фонарный мост и переулок" },
-                    { src: "glinka_young.jpg", caption: "Молодой Глинка" }
+                    { src: "glinka_young.jpg", caption: "Молодой М. И. Глинка" }
                 ],
-                description: "На пересечении с Фонарным переулком располагались дома, в которых композитор часто бывал. Эти места пропитаны духом старого Петербурга.", url: ""
+                description: "На пересечении с Фонарным переулком располагались дома, в которых М. И. Глинка часто бывал. Эти места пропитаны духом старого Петербурга.", url: ""
             },
             {
                 name: "Благородный пансион", address: "наб. реки Фонтанки, 164", coords: [59.914285, 30.279860], icon: redIcon,
-                yearLabel: "1818–1822",
+                mapLabel: "М. И. Глинка (1818–1822)",
                 images: [
                     { src: "pansion_old.jpg", caption: "Набережная Фонтанки (Тогда)" },
                     { src: "pansion_now.jpg", caption: "Здание пансиона (Сейчас)" },
                     { src: "glinka_young.jpg", caption: "Юный М. И. Глинка" }
                 ],
-                description: "В Благородном пансионе при Главном педагогическом институте Михаил Глинка учился с 1818 по 1822 год.", url: ""
+                description: "В Благородном пансионе при Главном педагогическом институте М. И. Глинка учился с 1818 по 1822 год.", url: ""
             },
             {
                 name: "Большой (Каменный) театр", address: "Театральная пл., 3", coords: [59.925700, 30.298200], icon: redIcon,
-                yearLabel: "1836, 1842",
+                mapLabel: "М. И. Глинка (1836, 1842)",
                 images: [
                     { src: "teatr_old.jpg", caption: "Большой Каменный театр (Тогда)" },
                     { src: "Bolshoi_Peterburg_Mayr.jpg", caption: "Исторический вид площади" },
                     { src: "conservatory_new.jpg", caption: "Здание Консерватории на этом месте (Сейчас)" }
                 ],
-                description: "Здесь находился Императорский Большой театр, на сцене которого с триумфом прошла премьера опер Глинки «Жизнь за царя» (1836) и «Руслан и Людмила» (1842). Сейчас на этом месте — Консерватория.", url: ""
+                description: "Здесь находился Императорский Большой театр, на сцене которого с триумфом прошла премьера опер М. И. Глинки «Жизнь за царя» (1836) и «Руслан и Людмила» (1842).", url: ""
             }
         ];
 
+        let currentLocData = null;
+        let currentImgIndex = 0;
+
         function openPanel(data) {
+            currentLocData = data;
+            currentImgIndex = 0;
+            
             document.getElementById('place-title').innerText = data.name;
             document.getElementById('place-address').innerText = data.address;
             document.getElementById('place-description').innerText = data.description;
@@ -166,47 +221,84 @@
             if (data.url) { btn.href = data.url; btn.style.display = 'inline-block'; } 
             else { btn.style.display = 'none'; }
             
-            const gallery = document.getElementById('image-gallery');
-            gallery.innerHTML = ''; 
-            
-            data.images.forEach(imgData => {
-                if (typeof imgData === 'string') {
-                    const img = document.createElement('img');
-                    img.src = imgData;
-                    gallery.appendChild(img);
-                } else {
-                    const figure = document.createElement('figure');
-                    const img = document.createElement('img');
-                    img.src = imgData.src;
-                    
-                    const caption = document.createElement('figcaption');
-                    caption.innerText = imgData.caption;
-                    
-                    figure.appendChild(img);
-                    figure.appendChild(caption);
-                    gallery.appendChild(figure);
-                }
-            });
+            updateSlide();
             document.getElementById('slide-panel').classList.add('active');
         }
 
-        function closePanel() { document.getElementById('slide-panel').classList.remove('active'); }
+        function updateSlide() {
+            const images = currentLocData.images;
+            const container = document.getElementById('slide-media-container');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (!images || images.length === 0) {
+                container.innerHTML = '';
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                return;
+            }
+
+            let imgData = images[currentImgIndex];
+            let src = typeof imgData === 'string' ? imgData : imgData.src;
+            let caption = typeof imgData === 'string' ? "" : (imgData.caption || "");
+            
+            let mediaHtml = '';
+            
+            if (src.toLowerCase().endsWith('.mp4') || src.toLowerCase().endsWith('.webm')) {
+                mediaHtml = `<video src="${src}" autoplay loop muted controls playsinline style="max-width: 100%; height: 50vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); background: #111;"></video>`;
+            } else {
+                mediaHtml = `<img src="${src}" style="max-width: 100%; height: 50vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">`;
+            }
+
+            container.innerHTML = `
+                ${mediaHtml}
+                <div id="current-slide-caption" style="margin-top: 15px; font-size: 20px; color: #ecf0f1; font-weight: bold; font-style: italic;">${caption}</div>
+                <div id="slide-counter" style="margin-top: 10px; font-size: 16px; color: #95a5a6; font-weight: bold;">${currentImgIndex + 1} / ${images.length}</div>
+            `;
+
+            if (images.length > 1) {
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+            } else {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            }
+        }
+
+        function nextImg() {
+            if (currentLocData && currentLocData.images.length > 1) {
+                currentImgIndex = (currentImgIndex + 1) % currentLocData.images.length;
+                updateSlide();
+            }
+        }
+
+        function prevImg() {
+            if (currentLocData && currentLocData.images.length > 1) {
+                currentImgIndex = (currentImgIndex - 1 + currentLocData.images.length) % currentLocData.images.length;
+                updateSlide();
+            }
+        }
+
+        function closePanel() { 
+            document.getElementById('slide-media-container').innerHTML = '';
+            document.getElementById('slide-panel').classList.remove('active'); 
+        }
 
         locations.forEach(loc => {
             const marker = L.marker(loc.coords, { icon: loc.icon }).addTo(map);
             
-            if (loc.yearLabel) {
-                marker.bindTooltip(loc.yearLabel, {
+            if (loc.mapLabel) {
+                marker.bindTooltip(loc.mapLabel, {
                     permanent: true,       
                     direction: 'bottom',   
-                    className: 'year-tooltip', 
+                    className: 'custom-tooltip', 
                     offset: [0, 5]         
                 });
             }
 
             marker.on('click', () => {
                 openPanel(loc);
-                map.setView([loc.coords[0], loc.coords[1] - 0.015], 14, { animate: true });
+                map.setView([loc.coords[0], loc.coords[1]], 14, { animate: true });
             });
         });
     </script>
